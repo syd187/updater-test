@@ -23,7 +23,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Abhängigkeiten installieren
-        run: npm ci
+        run: npm install
 
       - name: Tauri App bauen
-        run: npm run tauri build -- --bundles app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY}}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD}}
+        
