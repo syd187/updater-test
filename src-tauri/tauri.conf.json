@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "updater",
+  "version": "0.2.2",
+  "identifier": "com.paulsattler.updater",
+
+  "build": {
+    "frontendDist": "../src"
+  },
+
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "updater",
+        "width": 800,
+        "height": 600
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IENBMjNENjRERTc2QjA1QjEKUldTeEJXdm5UZFlqeXNPcUlzNU0rbHNhK0xvQm14bklJUU5nalVIcWdHNTJPWjFQSkJ5TWUreFoK",
+      "endpoints": [
+        "http://178.104.161.110/updater/latest.json"
+      ],
+      "dangerousInsecureTransportProtocol": true
+    }
+  } 
+}

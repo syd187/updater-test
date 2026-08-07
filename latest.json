@@ -1,0 +1,11 @@
+{
+  "version": "0.2.2",
+  "notes": "Update von Version 0.2.1 auf Version 0.2.2.",
+  "pub_date": "2026-08-07T10:50:00Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTeEJXdm5UZFlqeXE5ZjliaVBIdzV3R0VBR0E4WnhmR0Q2VW85anBTNHZSV3BSUi9Xb0dhMTlST2RUMmhPSVNlSXNCbmN1M0lxbk5pamRlVmt2WURBdFNEV3Jta1NMVXdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg2MDk5NjY5CWZpbGU6dXBkYXRlci5hcHAudGFyLmd6Ck9EUmNTWjRQTmVYc1dMTTV4WXcvc2wzdHRYWTB6RUNoNmt6NjczM0R3eG9ucjlUZXNqbzhsMWkwZ3ZucnJFVzZmb05TU2p2TEg1TUpEUWtqcmx2T0J3PT0K",
+      "url": "http://178.104.161.110/updater/0.2.2/updater.app.tar.gz"
+    }
+  }
+}
