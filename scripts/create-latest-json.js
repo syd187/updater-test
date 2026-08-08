@@ -3,7 +3,7 @@ import fs from "node:fs";
 const version = process.env.VERSION; 
 console.log(`Version: ${version}`);
 
-const Host = process.env.HETZNER_HOST;
+const host = process.env.HETZNER_HOST;
 
 const signaturPath = "src-tauri/target/release/bundle/macos/updater.app.tar.gz.sig"
 
