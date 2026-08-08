@@ -2,9 +2,13 @@ name: Mein erster Workflow
 
 on:
   workflow_dispatch:
+    inputs:
+      version: 
+        description: "Version, z.b wo 0.2.3"
+        required: true
   push:
-    branches:
-      - main
+    tags:
+      - "v*"
 
 jobs:
   build:
@@ -13,6 +17,21 @@ jobs:
     steps:
       - name: Repository herunterladen
         uses: actions/checkout@v4
+
+      - name: Version ermitteln
+        env:
+            MANUAL_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            VERSION="$MANUAL_VERSION"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+  
+          VERSION="${VERSION#v}"
+  
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
 
       - name: Node installieren
         uses: actions/setup-node@v4
@@ -25,12 +44,24 @@ jobs:
       - name: Abhängigkeiten installieren
         run: npm ci
 
+      - name: Version prüfen
+        run: |
+          APP_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
       
-      #- name: Tauri App bauen
-       # uses: tauri-apps/tauri-action@v0
-        #env:
-         # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY}}
-          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD}}
+          echo "Workflow-Version: $VERSION"
+          echo "Tauri-Version: $APP_VERSION"
+      
+          if [ "$VERSION" != "$APP_VERSION" ]; then
+            echo "Fehler: Versionen stimmen nicht überein."
+            exit 1
+          fi
+
+      
+      - name: Tauri App bauen
+        uses: tauri-apps/tauri-action@v0
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY}}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD}}
         
       - name: SSH vorbereiten
         env:
@@ -50,29 +81,20 @@ jobs:
           deploy-tester@178.104.161.110 \
           "whoami"
       
-      - name: json automatisch erzeugen 
-        run: | 
-          node -e '
-            const fs = require("fs") 
-            const daten = {
-              version: "0.2.3",
-              name: "Updater"
-            }
-            const json = JSON.stringify(daten, null, 2);
-              fs.writeFileSync("latest.json", json) 
-          '
+  
 
-      - name: testdatei erstellen 
-        run: echo "GitHub Upload funktioniert" > test-upload.txt
-
-      - name: Testdatei auf Server hochladen 
+      - name: Versionsordner erstellen 
         run: 
-          scp -i ~/.ssh/hetzner_deploy test-upload.txt deploy-tester@178.104.161.110:/var/www/html/updater/
+          ssh -i ~/.ssh/hetzner_deploy deploy-tester@178.104.161.110 "mkdir -p /var/www/html/updater/$VERSION" 
 
-          
-      - name: Upload kontrollieren
+      - name: Updatepaket hochladen
         run: |
-          ssh -i ~/.ssh/hetzner_deploy \
-            deploy-tester@178.104.161.110 \
-            "cat /var/www/html/updater/test-upload.txt"
+          scp -i ~/.ssh/hetzner_deploy \
+            src-tauri/target/release/bundle/macos/updater.app.tar.gz \
+            deploy-tester@178.104.161.110:/var/www/html/updater/$VERSION/updater.app.tar.gz.new
             
+      - name: Signatur hochladen
+        run: |
+          scp -i ~/.ssh/hetzner_deploy \
+            src-tauri/target/release/bundle/macos/updater.app.tar.gz.sig \
+            deploy-tester@178.104.161.110:/var/www/html/updater/$VERSION/updater.app.tar.gz.sig.new
