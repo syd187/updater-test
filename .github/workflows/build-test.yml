@@ -29,7 +29,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY}}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD}}
         
       - name: ssh vorbereiten  
         env: 
@@ -44,6 +43,6 @@ jobs:
           HETZNER_HOST: ${{ vars.HETZNER_HOST }}
           HETZNER_USER: ${{ vars.HETZNER_USER }}
         run: 
-          ssh -i ~/.ssh/hetzner_deploy "HETZER_USER"@"HETZER_HOST" whoami
+          ssh -i ~/.ssh/hetzner_deploy "$HETZER_USER@$HETZER_HOST" whoami
         
         
