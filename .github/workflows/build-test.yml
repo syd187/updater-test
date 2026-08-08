@@ -1,9 +1,10 @@
+
 name: Mein erster Workflow
 
 on:
   workflow_dispatch:
     inputs:
-      version: 
+      version:
         description: "Version, z.b wo 0.2.3"
         required: true
   push:
@@ -13,11 +14,16 @@ on:
 jobs:
   build:
     runs-on: macos-15
-
+    
+    
+    env: 
+      HETZNER_HOST: ${{ vars.HETZNER_HOST }}
+    
+    
     steps:
       - name: Repository herunterladen
         uses: actions/checkout@v4
-
+    
       - name: Version ermitteln
         env:
             MANUAL_VERSION: ${{ inputs.version }}
@@ -27,23 +33,23 @@ jobs:
           else
             VERSION="${GITHUB_REF_NAME#v}"
           fi
-  
+    
           VERSION="${VERSION#v}"
-  
+    
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-
-
+    
+    
       - name: Node installieren
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
+    
       - name: Rust installieren
         uses: dtolnay/rust-toolchain@stable
-
+    
       - name: Abhängigkeiten installieren
         run: npm ci
-
+    
       - name: Version prüfen
         run: |
           APP_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
@@ -55,7 +61,7 @@ jobs:
             echo "Fehler: Versionen stimmen nicht überein."
             exit 1
           fi
-
+    
       
       - name: Tauri App bauen
         uses: tauri-apps/tauri-action@v0
@@ -74,27 +80,34 @@ jobs:
           
       - name: hetzner login 
         env:
-          HETZNER_HOST: ${{ vars.HETZNER_HOST }}
           HETZNER_USER: ${{ vars.HETZNER_USER }}
         run: |
           ssh -i ~/.ssh/hetzner_deploy \
           deploy-tester@178.104.161.110 \
           "whoami"
       
-  
-
+      - name: json erstellen 
+        run: node scripts/create-latest-json.js 
+    
       - name: Versionsordner erstellen 
         run: 
           ssh -i ~/.ssh/hetzner_deploy deploy-tester@178.104.161.110 "mkdir -p /var/www/html/updater/$VERSION" 
-
+    
       - name: Updatepaket hochladen
         run: |
           scp -i ~/.ssh/hetzner_deploy \
             src-tauri/target/release/bundle/macos/updater.app.tar.gz \
-            deploy-tester@178.104.161.110:/var/www/html/updater/$VERSION/updater.app.tar.gz.new
+            deploy-tester@178.104.161.110:/var/www/html/updater/$VERSION/updater.app.tar.gz
             
       - name: Signatur hochladen
         run: |
           scp -i ~/.ssh/hetzner_deploy \
             src-tauri/target/release/bundle/macos/updater.app.tar.gz.sig \
-            deploy-tester@178.104.161.110:/var/www/html/updater/$VERSION/updater.app.tar.gz.sig.new
+            deploy-tester@178.104.161.110:/var/www/html/updater/$VERSION/updater.app.tar.gz.sig
+    
+      - name: latest.json hochladen
+        run: |
+          scp -i ~/.ssh/hetzner_deploy \
+            latest.json \
+            deploy-tester@178.104.161.110:/var/www/html/updater/latest.json
+    
