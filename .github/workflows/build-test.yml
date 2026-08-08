@@ -52,13 +52,14 @@ jobs:
       
       - name: json automatisch erzeugen 
         run: | 
-          node <<'NODE'
-          const fs = require("fs") 
-          const daten = {
-            version: "0.2.3",
-            name: "Updater"
-          }
-          const json = JSON.stringify(daten, null, 2);
-            fs.writeFileSync("latest.json", json) 
-          NODE   
+          node -e '
+            const fs = require("fs") 
+            const daten = {
+              version: "0.2.3",
+              name: "Updater"
+            }
+            const json = JSON.stringify(daten, null, 2);
+              fs.writeFileSync("latest.json", json) 
+          '
+          cat latest.json   
       
