@@ -46,8 +46,9 @@ jobs:
           HETZNER_HOST: ${{ vars.HETZNER_HOST }}
           HETZNER_USER: ${{ vars.HETZNER_USER }}
         run: |
-          ssh -i ~/.ssh/hetzner_deploy "$HETZNER_USER@$HETZNER_HOST" 
-          whoami
+          ssh -i ~/.ssh/hetzner_deploy \
+          deploy-tester@178.104.161.110 \
+          "whoami"
       
       - name: json automatisch erzeugen 
         run: | 
