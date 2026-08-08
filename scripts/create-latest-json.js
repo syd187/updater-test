@@ -1,4 +1,4 @@
-const fs = require("fs");   
+import fs from "node:fs";
 
 const version = process.env.VERSION; 
 console.log(`Version: ${version}`);
