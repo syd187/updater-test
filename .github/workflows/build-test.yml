@@ -67,9 +67,7 @@ jobs:
 
       - name: Testdatei auf Server hochladen 
         run: 
-          scp -i ~/.ssh/hetzner_deploy \
-          test-upload.txt \ 
-          deploy-tester@178.104.161.110:/var/www/html/updater/test-upload.txt
+          scp -i ~/.ssh/hetzner_deploy test-upload.txt deploy-tester@178.104.161.110:/var/www/html/updater/
 
           
       - name: Upload kontrollieren
