@@ -32,17 +32,17 @@ jobs:
         
       - name: ssh vorbereiten  
         env: 
-          SSH_PRIV: ${{secrets.HETZER_LOGIN}}
+          SSH_PRIV: ${{secrets.HETZNER_LOGIN}}
         run: 
           mkdir -p ~/.ssh 
           printf '%s\n' "$SSH_PRIV" > ~/.ssh/hetzner_deploy
-          chmod 600 ~/.ssh/hetzer_deploy 
+          chmod 600 ~/.ssh/hetzner_deploy 
           
-      - name: hetzer login 
+      - name: hetzner login 
         env:
           HETZNER_HOST: ${{ vars.HETZNER_HOST }}
           HETZNER_USER: ${{ vars.HETZNER_USER }}
         run: 
-          ssh -i ~/.ssh/hetzner_deploy "$HETZER_USER@$HETZER_HOST" whoami
+          ssh -i ~/.ssh/hetzner_deploy "$HETZNER_USER@$HETZNER_HOST" whoami
         
         
