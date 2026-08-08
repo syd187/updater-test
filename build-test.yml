@@ -1,0 +1,29 @@
+name: Mein erster Workflow
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: Repository herunterladen
+        uses: actions/checkout@v4
+
+      - name: Node installieren
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Rust installieren
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Tauri App bauen
+        run: npm run tauri build -- --bundles app
