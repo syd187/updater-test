@@ -29,14 +29,17 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY}}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD}}
         
       - name: ssh vorbereiten  
         env: 
           SSH_PRIV: ${{secrets.HETZNER_LOGIN}}
+          HETZNER_HOST: ${{ vars.HETZNER_HOST }}
         run: 
           mkdir -p ~/.ssh 
           printf '%s\n' "$SSH_PRIV" > ~/.ssh/hetzner_deploy
           chmod 600 ~/.ssh/hetzner_deploy 
+          ssh-keycann -H "$HETZNER_HOST" >> ~/.ssh/known_hosts 
           
       - name: hetzner login 
         env:
