@@ -61,5 +61,20 @@ jobs:
             const json = JSON.stringify(daten, null, 2);
               fs.writeFileSync("latest.json", json) 
           '
-          cat latest.json   
-      
+
+      - name: testdatei erstellen 
+        run: echo "GitHub Upload funktioniert" > test-upload.txt
+
+      - name: Testdatei auf Server hochladen 
+        run: 
+          scp -i ~/.ssh/hetzner_deploy \
+          test.upload.txt \ 
+          deploy-tester@178.104.161.110:/var/www/html/updater/
+
+          
+      - name: Upload kontrollieren
+        run: |
+          ssh -i ~/.ssh/hetzner_deploy \
+            deploy-tester@178.104.161.110 \
+            "cat /var/www/html/updater/test-upload.txt"
+            
