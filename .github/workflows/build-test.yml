@@ -41,8 +41,8 @@ jobs:
           
       - name: hetzer login 
         env:
-          HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
-          HETZNER_USER: ${{ secrets.HETZNER_USER }}
+          HETZNER_HOST: ${{ vars.HETZNER_HOST }}
+          HETZNER_USER: ${{ vars.HETZNER_USER }}
         run: 
           ssh -i ~/.ssh/hetzner_deploy "HETZER_USER"@"HETZER_HOST" whoami
         
