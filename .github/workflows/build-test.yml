@@ -32,14 +32,14 @@ jobs:
          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY}}
           # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD}}
         
-      - name: ssh vorbereiten  
-        env: 
-          SSH_PRIV: ${{secrets.HETZER_LOGIN}}
-          HETZNER_HOST: ${{ vars.HETZNER_HOST }}
+      - name: SSH vorbereiten
+        env:
+          SSH_PRIV: ${{ secrets.HETZER_LOGIN }}
         run: |
-          mkdir -p ~/.ssh 
+          mkdir -p ~/.ssh
           printf '%s\n' "$SSH_PRIV" > ~/.ssh/hetzner_deploy
-          chmod 600 ~/.ssh/hetzner_deploy 
+          chmod 600 ~/.ssh/hetzner_deploy
+          ssh-keyscan -H 178.104.161.110 >> ~/.ssh/known_hosts
           
       - name: hetzner login 
         env:
