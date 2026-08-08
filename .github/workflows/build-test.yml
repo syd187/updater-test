@@ -23,7 +23,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Abhängigkeiten installieren
-        run: npm install
+        run: npm ci
 
       
       #- name: Tauri App bauen
