@@ -34,7 +34,7 @@ jobs:
         
       - name: ssh vorbereiten  
         env: 
-          SSH_PRIV: ${{secrets.HETZNER_LOGIN}}
+          SSH_PRIV: ${{secrets.HETZER_LOGIN}}
           HETZNER_HOST: ${{ vars.HETZNER_HOST }}
         run: |
           mkdir -p ~/.ssh 
@@ -43,8 +43,8 @@ jobs:
           
       - name: hetzner login 
         env:
-          HETZNER_HOST: ${{ vars.HETZNER_HOST }}
-          HETZNER_USER: ${{ vars.HETZNER_USER }}
+          HETZNER_HOST: ${{ vars.HETZER_HOST }}
+          HETZNER_USER: ${{ vars.HETZER_USER }}
         run: |
           ssh -i ~/.ssh/hetzner_deploy "$HETZNER_USER@$HETZNER_HOST" 
           whoami
