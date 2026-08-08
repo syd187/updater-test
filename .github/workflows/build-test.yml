@@ -25,11 +25,12 @@ jobs:
       - name: Abhängigkeiten installieren
         run: npm install
 
-      - name: Tauri App bauen
-        uses: tauri-apps/tauri-action@v0
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY}}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD}}
+      
+      #- name: Tauri App bauen
+       # uses: tauri-apps/tauri-action@v0
+        #env:
+         # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY}}
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD}}
         
       - name: ssh vorbereiten  
         env: 
@@ -47,5 +48,16 @@ jobs:
           HETZNER_USER: ${{ vars.HETZNER_USER }}
         run: 
           ssh -i ~/.ssh/hetzner_deploy "$HETZNER_USER@$HETZNER_HOST" whoami
-        
-        
+      
+      - name: json automatisch erzeugen 
+        run: | 
+          node <<'NODE'
+          const fs = require("fs") 
+          const daten = {
+            version: "0.2.3",
+            name: "Updater"
+          }
+          const json = JSON.stringify(daten, null, 2);
+            fs.writeFileSync("lates.json", json) 
+          NODE   
+      
