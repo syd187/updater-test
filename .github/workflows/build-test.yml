@@ -35,7 +35,7 @@ jobs:
         env: 
           SSH_PRIV: ${{secrets.HETZNER_LOGIN}}
           HETZNER_HOST: ${{ vars.HETZNER_HOST }}
-        run: 
+        run: |
           mkdir -p ~/.ssh 
           printf '%s\n' "$SSH_PRIV" > ~/.ssh/hetzner_deploy
           chmod 600 ~/.ssh/hetzner_deploy 
