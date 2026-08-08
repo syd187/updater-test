@@ -44,6 +44,6 @@ jobs:
           HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
           HETZNER_USER: ${{ secrets.HETZNER_USER }}
         run: 
-          ssh -i ~/.ssh/hetzer_login "HETZER_USER"@"HETZER_HOST" whoami
+          ssh -i ~/.ssh/hetzner_deploy "HETZER_USER"@"HETZER_HOST" whoami
         
         
