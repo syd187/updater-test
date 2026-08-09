@@ -1,30 +1,28 @@
 import fs from "node:fs";
 
-const version = process.env.VERSION; 
-console.log(`Version: ${version}`);
-
+const version = process.env.VERSION;
 const host = process.env.HETZNER_HOST;
+const installerName = process.env.INSTALLER_NAME;
+const signaturePath = process.env.SIGNATURE_PATH;
 
-const signaturPath = "src-tauri/target/release/bundle/macos/updater.app.tar.gz.sig"
-
-const signature = fs.readFileSync(signaturPath, "utf-8").trim();
+const signature = fs.readFileSync(signaturePath, "utf8").trim();
 
 const pubDate = new Date().toISOString();
 
-const downloadURL = `http://${host}/updater/${version}/updater.app.tar.gz`;
-
+const downloadURL =
+  `http://${host}/updater/${version}/${installerName}`;
 
 const daten = {
-    version: version,
-    pubdate: pubDate,
-    platforms: {
-        "darwin-aarch64": {
-            url: downloadURL,
-            signature: signature
-        }
+  version: version,
+  pub_date: pubDate,
+  platforms: {
+    "windows-x86_64": {
+      url: downloadURL,
+      signature: signature
     }
-}
+  }
+};
 
-const json = JSON.stringify(daten, null, 2);    
+const json = JSON.stringify(daten, null, 2);
 
-fs.writeFileSync("latest.json", json, "utf-8");
+fs.writeFileSync("latest.json", json, "utf8");
