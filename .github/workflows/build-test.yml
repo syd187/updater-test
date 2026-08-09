@@ -92,7 +92,25 @@ jobs:
       - name: Versionsordner erstellen 
         run: 
           ssh -i ~/.ssh/hetzner_deploy deploy-tester@178.104.161.110 "mkdir -p /var/www/html/updater/$VERSION" 
-    
+
+
+      - name: DMG finden
+        run: |
+          DMG_PATH=$(find src-tauri/target/release/bundle/dmg -name "*.dmg" -type f | head -n 1)
+          echo "DMG_PATH=$DMG_PATH" >> "$GITHUB_ENV"
+
+      - name: Installationordner erstellen
+        run: |
+          ssh -i ~/.ssh/hetzner_deploy \
+          deploy-tester@178.104.161.110 \
+          mkdir -p "/var/www/html/downloads/mac/$VERSION"
+
+      - name: Installationsdatei hochladen 
+        run: |
+          scp -i ~/.ssh/hetzner_deploy \
+          "$DMG_PATH" \
+          deploy-tester@178.104.161.110:/var/www/html/downloads/mac/$VERSION/updater.dmg
+            
       - name: Updatepaket hochladen
         run: |
           scp -i ~/.ssh/hetzner_deploy \
