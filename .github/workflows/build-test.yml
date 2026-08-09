@@ -1,75 +1,95 @@
-
-name: Mein erster Workflow
+name: Windows Release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version, z.b wo 0.2.3"
+        description: "Version, z. B. 0.3.0"
         required: true
+        type: string
+
   push:
     tags:
       - "v*"
 
 jobs:
-  build:
-    runs-on: macos-15
-    
-    
-    env: 
+  build-windows:
+    runs-on: windows-latest
+
+    env:
       HETZNER_HOST: ${{ vars.HETZNER_HOST }}
-    
-    
+      HETZNER_USER: ${{ vars.HETZNER_USER }}
+
     steps:
       - name: Repository herunterladen
         uses: actions/checkout@v4
-    
+
       - name: Version ermitteln
+        shell: bash
         env:
-            MANUAL_VERSION: ${{ inputs.version }}
+          MANUAL_VERSION: ${{ inputs.version }}
         run: |
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             VERSION="$MANUAL_VERSION"
           else
             VERSION="${GITHUB_REF_NAME#v}"
           fi
-    
+
           VERSION="${VERSION#v}"
-    
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-    
-    
+
       - name: Node installieren
         uses: actions/setup-node@v4
         with:
           node-version: 22
-    
+
       - name: Rust installieren
         uses: dtolnay/rust-toolchain@stable
-    
+
       - name: Abhängigkeiten installieren
         run: npm ci
-    
+
       - name: Version prüfen
+        shell: bash
         run: |
           APP_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
-      
-          echo "Workflow-Version: $VERSION"
-          echo "Tauri-Version: $APP_VERSION"
-      
+
           if [ "$VERSION" != "$APP_VERSION" ]; then
             echo "Fehler: Versionen stimmen nicht überein."
             exit 1
           fi
-    
-      
+
       - name: Tauri App bauen
         uses: tauri-apps/tauri-action@v0
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY}}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD}}
-        
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Installer ermitteln
+        shell: bash
+        run: |
+          INSTALLER_PATH=$(find src-tauri/target/release/bundle/nsis -type f -name "*-setup.exe" | head -n 1)
+
+          if [ -z "$INSTALLER_PATH" ]; then
+            exit 1
+          fi
+
+          SIGNATURE_PATH="${INSTALLER_PATH}.sig"
+          INSTALLER_NAME=$(basename "$INSTALLER_PATH")
+
+          if [ ! -f "$SIGNATURE_PATH" ]; then
+            exit 1
+          fi
+
+          echo "INSTALLER_PATH=$INSTALLER_PATH" >> "$GITHUB_ENV"
+          echo "SIGNATURE_PATH=$SIGNATURE_PATH" >> "$GITHUB_ENV"
+          echo "INSTALLER_NAME=$INSTALLER_NAME" >> "$GITHUB_ENV"
+
+      - name: latest.json erstellen
+        run: node scripts/create-latest-json.js
+
       - name: SSH vorbereiten
+        shell: bash
         env:
           SSH_PRIV: ${{ secrets.HETZER_LOGIN }}
         run: |
@@ -77,55 +97,38 @@ jobs:
           printf '%s\n' "$SSH_PRIV" > ~/.ssh/hetzner_deploy
           chmod 600 ~/.ssh/hetzner_deploy
           ssh-keyscan -H 178.104.161.110 >> ~/.ssh/known_hosts
-          
-      - name: hetzner login 
-        env:
-          HETZNER_USER: ${{ vars.HETZNER_USER }}
+
+      - name: Serverordner erstellen
+        shell: bash
         run: |
           ssh -i ~/.ssh/hetzner_deploy \
-          deploy-tester@178.104.161.110 \
-          "whoami"
-      
-      - name: json erstellen 
-        run: node scripts/create-latest-json.js 
-    
-      - name: Versionsordner erstellen 
-        run: 
-          ssh -i ~/.ssh/hetzner_deploy deploy-tester@178.104.161.110 "mkdir -p /var/www/html/updater/$VERSION" 
+            "$HETZNER_USER@$HETZNER_HOST" \
+            "mkdir -p /var/www/html/updater/$VERSION /var/www/html/downloads/windows/$VERSION"
 
-
-      - name: DMG finden
-        run: |
-          DMG_PATH=$(find src-tauri/target/release/bundle/dmg -name "*.dmg" -type f | head -n 1)
-          echo "DMG_PATH=$DMG_PATH" >> "$GITHUB_ENV"
-
-      - name: Installationordner erstellen
-        run: |
-          ssh -i ~/.ssh/hetzner_deploy \
-          deploy-tester@178.104.161.110 \
-          mkdir -p "/var/www/html/downloads/mac/$VERSION"
-
-      - name: Installationsdatei hochladen 
+      - name: Installationsdatei hochladen
+        shell: bash
         run: |
           scp -i ~/.ssh/hetzner_deploy \
-          "$DMG_PATH" \
-          deploy-tester@178.104.161.110:/var/www/html/downloads/mac/$VERSION/updater.dmg
-            
+            "$INSTALLER_PATH" \
+            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/downloads/windows/$VERSION/"
+
       - name: Updatepaket hochladen
+        shell: bash
         run: |
           scp -i ~/.ssh/hetzner_deploy \
-            src-tauri/target/release/bundle/macos/updater.app.tar.gz \
-            deploy-tester@178.104.161.110:/var/www/html/updater/$VERSION/updater.app.tar.gz
-            
+            "$INSTALLER_PATH" \
+            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/updater/$VERSION/"
+
       - name: Signatur hochladen
+        shell: bash
         run: |
           scp -i ~/.ssh/hetzner_deploy \
-            src-tauri/target/release/bundle/macos/updater.app.tar.gz.sig \
-            deploy-tester@178.104.161.110:/var/www/html/updater/$VERSION/updater.app.tar.gz.sig
-    
+            "$SIGNATURE_PATH" \
+            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/updater/$VERSION/"
+
       - name: latest.json hochladen
+        shell: bash
         run: |
           scp -i ~/.ssh/hetzner_deploy \
             latest.json \
-            deploy-tester@178.104.161.110:/var/www/html/updater/latest.json
-    
+            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/updater/latest.json"
