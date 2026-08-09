@@ -13,11 +13,6 @@ on:
       - "v*"
 
 jobs:
-
-  # ============================================================
-  # MACOS BUILD
-  # ============================================================
-
   build-macos:
     runs-on: macos-15
 
@@ -41,8 +36,8 @@ jobs:
           fi
 
           VERSION="${VERSION#v}"
-
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
 
       - name: Node installieren
         uses: actions/setup-node@v4
@@ -83,13 +78,8 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_PRIV" > ~/.ssh/hetzner_deploy
           chmod 600 ~/.ssh/hetzner_deploy
-          ssh-keyscan -H "$HETZNER_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -H 178.104.161.110 >> ~/.ssh/known_hosts
 
-      - name: Hetzner Login testen
-        run: |
-          ssh -i ~/.ssh/hetzner_deploy \
-            "$HETZNER_USER@$HETZNER_HOST" \
-            "whoami"
 
       - name: Versionsordner erstellen
         run: |
@@ -107,7 +97,6 @@ jobs:
           fi
 
           echo "DMG_PATH=$DMG_PATH" >> "$GITHUB_ENV"
-          echo "DMG gefunden: $DMG_PATH"
 
       - name: Installationsordner erstellen
         run: |
@@ -145,10 +134,6 @@ jobs:
             latest.json \
             "$HETZNER_USER@$HETZNER_HOST:/var/www/html/updater/latest.json"
 
-
-  # ============================================================
-  # WINDOWS BUILD
-  # ============================================================
 
   build-windows:
     runs-on: windows-latest
