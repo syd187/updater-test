@@ -1,10 +1,10 @@
-name: Mein erster Workflow
+name: Windows Release
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version, z. B. 0.2.3"
+        description: "Version, z. B. 0.3.0"
         required: true
         type: string
 
@@ -13,19 +13,19 @@ on:
       - "v*"
 
 jobs:
-  build-macos:
-    runs-on: macos-15
+  build-windows:
+    runs-on: windows-latest
 
     env:
       HETZNER_HOST: ${{ vars.HETZNER_HOST }}
       HETZNER_USER: ${{ vars.HETZNER_USER }}
 
     steps:
-
       - name: Repository herunterladen
         uses: actions/checkout@v4
 
       - name: Version ermitteln
+        shell: bash
         env:
           MANUAL_VERSION: ${{ inputs.version }}
         run: |
@@ -38,7 +38,6 @@ jobs:
           VERSION="${VERSION#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
-
       - name: Node installieren
         uses: actions/setup-node@v4
         with:
@@ -51,27 +50,46 @@ jobs:
         run: npm ci
 
       - name: Version prüfen
+        shell: bash
         run: |
           APP_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
-
-          echo "Workflow-Version: $VERSION"
-          echo "Tauri-Version: $APP_VERSION"
 
           if [ "$VERSION" != "$APP_VERSION" ]; then
             echo "Fehler: Versionen stimmen nicht überein."
             exit 1
           fi
 
-      - name: Tauri Mac App bauen
+      - name: Tauri App bauen
         uses: tauri-apps/tauri-action@v0
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
+      - name: Installer ermitteln
+        shell: bash
+        run: |
+          INSTALLER_PATH=$(find src-tauri/target/release/bundle/nsis -type f -name "*-setup.exe" | head -n 1)
+
+          if [ -z "$INSTALLER_PATH" ]; then
+            exit 1
+          fi
+
+          SIGNATURE_PATH="${INSTALLER_PATH}.sig"
+          INSTALLER_NAME=$(basename "$INSTALLER_PATH")
+
+          if [ ! -f "$SIGNATURE_PATH" ]; then
+            exit 1
+          fi
+
+          echo "INSTALLER_PATH=$INSTALLER_PATH" >> "$GITHUB_ENV"
+          echo "SIGNATURE_PATH=$SIGNATURE_PATH" >> "$GITHUB_ENV"
+          echo "INSTALLER_NAME=$INSTALLER_NAME" >> "$GITHUB_ENV"
+
       - name: latest.json erstellen
         run: node scripts/create-latest-json.js
 
       - name: SSH vorbereiten
+        shell: bash
         env:
           SSH_PRIV: ${{ secrets.HETZER_LOGIN }}
         run: |
@@ -80,125 +98,37 @@ jobs:
           chmod 600 ~/.ssh/hetzner_deploy
           ssh-keyscan -H 178.104.161.110 >> ~/.ssh/known_hosts
 
-
-      - name: Versionsordner erstellen
+      - name: Serverordner erstellen
+        shell: bash
         run: |
           ssh -i ~/.ssh/hetzner_deploy \
             "$HETZNER_USER@$HETZNER_HOST" \
-            "mkdir -p /var/www/html/updater/$VERSION"
+            "mkdir -p /var/www/html/updater/$VERSION /var/www/html/downloads/windows/$VERSION"
 
-      - name: DMG finden
-        run: |
-          DMG_PATH=$(find src-tauri/target/release/bundle/dmg -name "*.dmg" -type f | head -n 1)
-
-          if [ -z "$DMG_PATH" ]; then
-            echo "Fehler: Keine DMG gefunden."
-            exit 1
-          fi
-
-          echo "DMG_PATH=$DMG_PATH" >> "$GITHUB_ENV"
-
-      - name: Installationsordner erstellen
-        run: |
-          ssh -i ~/.ssh/hetzner_deploy \
-            "$HETZNER_USER@$HETZNER_HOST" \
-            "mkdir -p /var/www/html/downloads/mac/$VERSION"
-
-      - name: Mac Installationsdatei hochladen
+      - name: Installationsdatei hochladen
+        shell: bash
         run: |
           scp -i ~/.ssh/hetzner_deploy \
-            "$DMG_PATH" \
-            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/downloads/mac/$VERSION/updater.dmg"
-
-      - name: Aktuelle Mac Installationsdatei hochladen
-        run: |
-          scp -i ~/.ssh/hetzner_deploy \
-            "$DMG_PATH" \
-            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/downloads/mac/updater.dmg"
+            "$INSTALLER_PATH" \
+            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/downloads/windows/$VERSION/"
 
       - name: Updatepaket hochladen
+        shell: bash
         run: |
           scp -i ~/.ssh/hetzner_deploy \
-            src-tauri/target/release/bundle/macos/updater.app.tar.gz \
-            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/updater/$VERSION/updater.app.tar.gz"
+            "$INSTALLER_PATH" \
+            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/updater/$VERSION/"
 
       - name: Signatur hochladen
+        shell: bash
         run: |
           scp -i ~/.ssh/hetzner_deploy \
-            src-tauri/target/release/bundle/macos/updater.app.tar.gz.sig \
-            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/updater/$VERSION/updater.app.tar.gz.sig"
+            "$SIGNATURE_PATH" \
+            "$HETZNER_USER@$HETZNER_HOST:/var/www/html/updater/$VERSION/"
 
       - name: latest.json hochladen
+        shell: bash
         run: |
           scp -i ~/.ssh/hetzner_deploy \
             latest.json \
             "$HETZNER_USER@$HETZNER_HOST:/var/www/html/updater/latest.json"
-
-
-  build-windows:
-    runs-on: windows-latest
-
-    steps:
-
-      - name: Repository herunterladen
-        uses: actions/checkout@v4
-
-      - name: Version ermitteln
-        shell: pwsh
-        env:
-          MANUAL_VERSION: ${{ inputs.version }}
-        run: |
-          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
-            $VERSION = $env:MANUAL_VERSION
-          }
-          else {
-            $VERSION = $env:GITHUB_REF_NAME -replace '^v', ''
-          }
-
-          $VERSION = $VERSION -replace '^v', ''
-
-          "VERSION=$VERSION" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Node installieren
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Rust installieren
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Abhängigkeiten installieren
-        run: npm ci
-
-      - name: Version prüfen
-        shell: pwsh
-        run: |
-          $APP_VERSION = node -p "require('./src-tauri/tauri.conf.json').version"
-
-          Write-Host "Workflow-Version: $env:VERSION"
-          Write-Host "Tauri-Version: $APP_VERSION"
-
-          if ($env:VERSION -ne $APP_VERSION) {
-            Write-Error "Fehler: Versionen stimmen nicht überein."
-            exit 1
-          }
-
-      - name: Tauri Windows App bauen
-        uses: tauri-apps/tauri-action@v0
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
-      - name: Windows Build-Dateien anzeigen
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse
-
-      - name: Windows Installer als Artifact speichern
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-installer
-          overwrite: true
-          path: |
-            src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/bundle/nsis/*.exe.sig
