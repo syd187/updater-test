@@ -1,9 +1,9 @@
 import fs from "node:fs";
 
-const version = process.env.VERSION;
-const host = process.env.HETZNER_HOST;
-const installerName = process.env.INSTALLER_NAME;
-const signaturePath = process.env.SIGNATURE_PATH;
+const version = process.env.VERSION.trim();
+const host = process.env.HETZNER_HOST.trim();
+const installerName = process.env.INSTALLER_NAME.trim();
+const signaturePath = process.env.SIGNATURE_PATH.trim();
 
 const signature = fs.readFileSync(signaturePath, "utf8").trim();
 
